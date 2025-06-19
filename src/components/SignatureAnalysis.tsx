@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileImage, Scan, Camera } from 'lucide-react';
+import { FileImage, Scan, Camera, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -22,6 +22,7 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const [progress, setProgress] = useState(0);
+  const [showNoMatch, setShowNoMatch] = useState(false);
 
   const analyzeSignature = async () => {
     if (!capturedImage) {
@@ -32,6 +33,7 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
     setIsAnalyzing(true);
     setProgress(0);
     setAnalysisResults([]);
+    setShowNoMatch(false);
 
     // Simulate analysis progress
     const progressInterval = setInterval(() => {
@@ -53,28 +55,48 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       if (doctors.length === 0) {
-        toast.error('No doctors in database to compare against');
+        toast.error('No doctors in database to compare against. Please add doctors first.');
         setIsAnalyzing(false);
         clearInterval(progressInterval);
         return;
       }
 
-      // Generate mock analysis results
-      const mockResults: AnalysisResult[] = doctors.map((doctor: any, index: number) => ({
-        doctorName: doctor.name,
-        specialty: doctor.specialty,
-        confidence: Math.max(20, Math.random() * 95),
-        matchFeatures: [
-          'Stroke width similarity',
-          'Letter spacing pattern',
-          'Signature length',
-          'Curve characteristics'
-        ].slice(0, Math.floor(Math.random() * 4) + 1)
-      })).sort((a: AnalysisResult, b: AnalysisResult) => b.confidence - a.confidence);
+      // Generate mock analysis results with more realistic confidence scores
+      const mockResults: AnalysisResult[] = doctors.map((doctor: any, index: number) => {
+        // Generate more realistic confidence scores - most will be low
+        const baseConfidence = Math.random() * 40; // 0-40% base
+        const bonus = index === 0 ? Math.random() * 50 : Math.random() * 20; // First doctor might get higher score
+        const confidence = Math.min(95, baseConfidence + bonus);
+        
+        return {
+          doctorName: doctor.name,
+          specialty: doctor.specialty,
+          confidence: confidence,
+          matchFeatures: [
+            'Stroke width similarity',
+            'Letter spacing pattern', 
+            'Signature length',
+            'Curve characteristics',
+            'Pen pressure variation',
+            'Letter formation style'
+          ].slice(0, Math.floor(Math.random() * 4) + 1)
+        };
+      }).sort((a: AnalysisResult, b: AnalysisResult) => b.confidence - a.confidence);
+
+      // Check if the best match is above a reasonable threshold
+      const bestMatch = mockResults[0];
+      const CONFIDENCE_THRESHOLD = 60; // Minimum confidence to show results
 
       setProgress(100);
-      setAnalysisResults(mockResults);
-      toast.success('Signature analysis completed!');
+      
+      if (!bestMatch || bestMatch.confidence < CONFIDENCE_THRESHOLD) {
+        setShowNoMatch(true);
+        setAnalysisResults([]);
+        toast.error('No similar doctor signatures found in the database');
+      } else {
+        setAnalysisResults(mockResults);
+        toast.success('Signature analysis completed!');
+      }
     } catch (error) {
       console.error('Analysis error:', error);
       toast.error('Error during signature analysis');
@@ -119,14 +141,16 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="font-medium mb-2">Captured Signature</h3>
-                <img
-                  src={capturedImage}
-                  alt="Signature to analyze"
-                  className="w-full h-32 object-cover rounded border"
-                />
+                <div className="bg-white p-2 rounded border">
+                  <img
+                    src={capturedImage}
+                    alt="Signature to analyze"
+                    className="w-full max-h-48 object-contain"
+                  />
+                </div>
               </div>
 
-              {!isAnalyzing && analysisResults.length === 0 && (
+              {!isAnalyzing && analysisResults.length === 0 && !showNoMatch && (
                 <Button onClick={analyzeSignature} className="w-full">
                   <Scan className="h-4 w-4 mr-2" />
                   Analyze Signature
@@ -145,6 +169,25 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
                       <p className="text-xs text-gray-600">
                         Comparing against {JSON.parse(localStorage.getItem('doctors') || '[]').length} doctor signatures
                       </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {showNoMatch && (
+                <Card className="border-red-200 bg-red-50">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center space-x-3">
+                      <AlertCircle className="h-8 w-8 text-red-500" />
+                      <div>
+                        <h3 className="font-medium text-red-900">No Similar Doctor Signatures Found</h3>
+                        <p className="text-sm text-red-700 mt-1">
+                          The captured signature doesn't match any doctors in your database with sufficient confidence.
+                        </p>
+                        <p className="text-xs text-red-600 mt-2">
+                          Try capturing a clearer image or add more doctor signatures to your database.
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -190,6 +233,7 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
                     onClick={() => {
                       setAnalysisResults([]);
                       setProgress(0);
+                      setShowNoMatch(false);
                     }} 
                     variant="outline" 
                     className="w-full"
@@ -212,6 +256,7 @@ const SignatureAnalysis: React.FC<SignatureAnalysisProps> = ({ capturedImage }) 
             <li>• Compares against your doctor database</li>
             <li>• Provides confidence scores for each potential match</li>
             <li>• Shows matching features for verification</li>
+            <li>• Requires minimum 60% confidence to show results</li>
           </ul>
         </CardContent>
       </Card>

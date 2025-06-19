@@ -40,6 +40,7 @@ const Index = () => {
             variant={activeView === 'scan' ? 'default' : 'outline'}
             onClick={() => setActiveView('scan')}
             className="flex items-center justify-center space-x-2 py-3"
+            data-tab="scan"
           >
             <Camera className="h-4 w-4" />
             <span>Scan</span>
@@ -48,6 +49,7 @@ const Index = () => {
             variant={activeView === 'database' ? 'default' : 'outline'}
             onClick={() => setActiveView('database')}
             className="flex items-center justify-center space-x-2 py-3"
+            data-tab="database"
           >
             <Database className="h-4 w-4" />
             <span>Database</span>
@@ -56,6 +58,7 @@ const Index = () => {
             variant={activeView === 'analysis' ? 'default' : 'outline'}
             onClick={() => setActiveView('analysis')}
             className="flex items-center justify-center space-x-2 py-3"
+            data-tab="analysis"
           >
             <FileImage className="h-4 w-4" />
             <span>Analysis</span>
@@ -81,20 +84,24 @@ const Index = () => {
         <div className="grid grid-cols-3 gap-4">
           <Card className="text-center">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-blue-600">0</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {capturedImage ? '1' : '0'}
+              </div>
               <div className="text-sm text-gray-600">Signatures Scanned</div>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-green-600">0</div>
+              <div className="text-2xl font-bold text-green-600">
+                {JSON.parse(localStorage.getItem('doctors') || '[]').length}
+              </div>
               <div className="text-sm text-gray-600">Doctors in Database</div>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-purple-600">0%</div>
-              <div className="text-sm text-gray-600">Match Accuracy</div>
+              <div className="text-2xl font-bold text-purple-600">AI</div>
+              <div className="text-sm text-gray-600">Powered Recognition</div>
             </CardContent>
           </Card>
         </div>
