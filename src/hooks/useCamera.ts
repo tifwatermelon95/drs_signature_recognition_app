@@ -33,38 +33,37 @@ export const useCamera = (onImageCapture: (imageUrl: string) => void) => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         
-        // Wait for metadata to load
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded');
-          if (videoRef.current) {
-            videoRef.current.play()
-              .then(() => {
-                console.log('Video playing successfully');
-                setIsStreaming(true);
-                setIsLoading(false);
-                toast.success('Camera started successfully!');
-              })
-              .catch((error) => {
-                console.error('Error playing video:', error);
-                setIsLoading(false);
-                toast.error('Error starting camera preview');
-              });
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error('Video ref not available'));
+            return;
           }
-        };
 
-        // Handle video errors
-        videoRef.current.onerror = (error) => {
-          console.error('Video element error:', error);
-          setIsLoading(false);
-          toast.error('Video playback error');
-        };
+          videoRef.current.onloadedmetadata = () => {
+            console.log('Video metadata loaded');
+            if (videoRef.current) {
+              videoRef.current.play()
+                .then(() => {
+                  console.log('Video playing successfully');
+                  setIsStreaming(true);
+                  setIsLoading(false);
+                  toast.success('Camera ready! Position your signature and tap capture.');
+                  resolve();
+                })
+                .catch(reject);
+            }
+          };
+
+          videoRef.current.onerror = reject;
+        });
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
       setIsLoading(false);
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          toast.error('Camera access denied. Please allow camera permissions and refresh the page.');
+          toast.error('Camera access denied. Please allow camera permissions.');
         } else if (error.name === 'NotFoundError') {
           toast.error('No camera found on this device.');
         } else if (error.name === 'NotReadableError') {
@@ -94,7 +93,7 @@ export const useCamera = (onImageCapture: (imageUrl: string) => void) => {
   }, []);
 
   const captureImage = useCallback(() => {
-    console.log('Attempting to capture image...');
+    console.log('Capturing photo...');
     if (videoRef.current && canvasRef.current && isStreaming) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -108,13 +107,13 @@ export const useCamera = (onImageCapture: (imageUrl: string) => void) => {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         const imageUrl = canvas.toDataURL('image/jpeg', 0.9);
-        console.log('Image captured successfully, data URL length:', imageUrl.length);
+        console.log('Photo captured successfully');
         onImageCapture(imageUrl);
         stopCamera();
-        toast.success('Signature captured successfully!');
+        toast.success('Photo captured successfully!');
       } else {
         console.error('Invalid video dimensions or context');
-        toast.error('Unable to capture image. Please ensure camera is working properly.');
+        toast.error('Unable to capture photo. Please try again.');
       }
     } else {
       console.error('Camera not ready for capture. isStreaming:', isStreaming);

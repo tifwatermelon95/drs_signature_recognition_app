@@ -30,7 +30,7 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({
           <div className="absolute inset-4 border-2 border-dashed border-white/70 rounded-lg flex items-center justify-center pointer-events-none">
             <div className="text-white text-center bg-black/50 rounded-lg p-3">
               <p className="text-sm font-medium">Position signature here</p>
-              <p className="text-xs opacity-75">Ensure good lighting and focus</p>
+              <p className="text-xs opacity-75">Tap the capture button when ready</p>
             </div>
           </div>
         )}
@@ -38,13 +38,14 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({
       <div className="flex space-x-3">
         <Button 
           onClick={onCapture} 
-          className="flex-1 bg-green-600 hover:bg-green-700 h-12 text-lg font-semibold"
+          size="lg"
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
           disabled={!isStreaming}
         >
           <Camera className="h-5 w-5 mr-2" />
-          Take Photo
+          Capture Photo
         </Button>
-        <Button variant="outline" onClick={onCancel} className="h-12">
+        <Button variant="outline" onClick={onCancel} size="lg">
           <X className="h-4 w-4" />
         </Button>
       </div>
