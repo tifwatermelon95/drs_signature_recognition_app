@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface CameraPreviewProps {
@@ -18,32 +18,34 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="relative rounded-lg overflow-hidden bg-black">
+      <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
         <video
           ref={videoRef}
-          className="w-full h-80 object-cover"
+          className="w-full h-full object-cover"
           playsInline
           muted
           autoPlay
         />
-        <div className="absolute inset-0 border-2 border-dashed border-white/70 m-6 rounded-lg flex items-center justify-center pointer-events-none">
-          <div className="text-white text-center bg-black/50 rounded-lg p-3">
-            <p className="text-sm font-medium">Position signature here</p>
-            <p className="text-xs opacity-75">Ensure good lighting and focus</p>
+        {isStreaming && (
+          <div className="absolute inset-4 border-2 border-dashed border-white/70 rounded-lg flex items-center justify-center pointer-events-none">
+            <div className="text-white text-center bg-black/50 rounded-lg p-3">
+              <p className="text-sm font-medium">Position signature here</p>
+              <p className="text-xs opacity-75">Ensure good lighting and focus</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
-      <div className="flex space-x-2">
+      <div className="flex space-x-3">
         <Button 
           onClick={onCapture} 
-          className="flex-1 bg-green-600 hover:bg-green-700"
+          className="flex-1 bg-green-600 hover:bg-green-700 h-12 text-lg font-semibold"
           disabled={!isStreaming}
         >
-          <Camera className="h-4 w-4 mr-2" />
+          <Camera className="h-5 w-5 mr-2" />
           Take Photo
         </Button>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
+        <Button variant="outline" onClick={onCancel} className="h-12">
+          <X className="h-4 w-4" />
         </Button>
       </div>
     </div>
