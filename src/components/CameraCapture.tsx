@@ -20,26 +20,28 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture }) => {
   const startCamera = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Request camera permissions with more specific constraints
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          facingMode: 'environment', // Use back camera on mobile
-          width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 }
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         },
         audio: false
       });
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        
-        // Wait for the video to be ready
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
-            videoRef.current.play();
-            setIsStreaming(true);
-            setIsLoading(false);
-            toast.success('Camera started successfully!');
+            videoRef.current.play().then(() => {
+              setIsStreaming(true);
+              setIsLoading(false);
+              toast.success('Camera started successfully!');
+            }).catch((error) => {
+              console.error('Error playing video:', error);
+              setIsLoading(false);
+              toast.error('Error starting camera preview');
+            });
           }
         };
       }
@@ -70,17 +72,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture }) => {
   }, []);
 
   const captureImage = useCallback(() => {
-    if (videoRef.current && canvasRef.current) {
+    if (videoRef.current && canvasRef.current && isStreaming) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
       const context = canvas.getContext('2d');
       
-      if (context) {
-        // Set canvas size to match video
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
+        // Set canvas dimensions to match video
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Draw the video frame to canvas
+        // Draw the current video frame to canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         // Convert to base64 image
@@ -89,9 +91,13 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture }) => {
         onImageCapture(imageUrl);
         stopCamera();
         toast.success('Signature captured successfully!');
+      } else {
+        toast.error('Unable to capture image. Please ensure camera is working properly.');
       }
+    } else {
+      toast.error('Camera not ready. Please wait for camera to start.');
     }
-  }, [onImageCapture, stopCamera]);
+  }, [onImageCapture, stopCamera, isStreaming]);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -164,7 +170,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture }) => {
                   muted
                   autoPlay
                 />
-                <div className="absolute inset-0 border-2 border-dashed border-white/70 m-6 rounded-lg flex items-center justify-center">
+                <div className="absolute inset-0 border-2 border-dashed border-white/70 m-6 rounded-lg flex items-center justify-center pointer-events-none">
                   <div className="text-white text-center bg-black/50 rounded-lg p-3">
                     <p className="text-sm font-medium">Position signature here</p>
                     <p className="text-xs opacity-75">Ensure good lighting and focus</p>
@@ -172,9 +178,13 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture }) => {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button onClick={captureImage} className="flex-1">
+                <Button 
+                  onClick={captureImage} 
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  disabled={!isStreaming}
+                >
                   <Camera className="h-4 w-4 mr-2" />
-                  Capture
+                  Take Photo
                 </Button>
                 <Button variant="outline" onClick={stopCamera}>
                   Cancel
@@ -196,12 +206,11 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCapture }) => {
               <div className="flex space-x-2">
                 <Button onClick={retakePhoto} variant="outline" className="flex-1">
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Retake
+                  Retake Photo
                 </Button>
                 <Button 
                   className="flex-1"
                   onClick={() => {
-                    // Switch to analysis tab
                     const analysisTab = document.querySelector('[data-tab="analysis"]') as HTMLElement;
                     if (analysisTab) {
                       analysisTab.click();
